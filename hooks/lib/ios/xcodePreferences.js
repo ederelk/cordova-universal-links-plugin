@@ -131,23 +131,30 @@ function isPbxReferenceAlreadySet(fileReferenceSection, entitlementsRelativeFile
  * Load iOS project file from platform specific folder.
  *
  * @return {Object} projectFile - project file information
+ * Note from Eder:  I updated this function based on this issue which was causing trouble https://github.com/nordnet/cordova-universal-links-plugin/issues/131
  */
-function loadProjectFile() {
-  var platform_ios;
-  var projectFile;
-
-  try {
-    // try pre-5.0 cordova structure
-    platform_ios = context.requireCordovaModule('cordova-lib/src/plugman/platforms')['ios'];
-    projectFile = platform_ios.parseProjectFile(iosPlatformPath());
-  } catch (e) {
-    // let's try cordova 5.0 structure
-    platform_ios = context.requireCordovaModule('cordova-lib/src/plugman/platforms/ios');
-    projectFile = platform_ios.parseProjectFile(iosPlatformPath());
-  }
-
-  return projectFile;
-}
+ function loadProjectFile() {
+   var platform_ios;
+   var projectFile;
+   try {
+     // try pre-5.0 cordova structure
+     platform_ios = context.requireCordovaModule('cordova-lib/src/plugman/platforms')['ios'];
+     projectFile = platform_ios.parseProjectFile(iosPlatformPath());
+   } catch (e) {
+     try {
+       // let's try cordova 5.0 structure
+       platform_ios = context.requireCordovaModule('cordova-lib/src/plugman/platforms/ios');
+       projectFile = platform_ios.parse(iosPlatformPath());
+     } catch (e) {
+       // try cordova 7.0 structure
+       var iosPlatformApi = require(path.join(iosPlatformPath(), '/cordova/Api'));
+       var projectFileApi = require(path.join(iosPlatformPath(), '/cordova/lib/projectFile.js'));
+       var locations = (new iosPlatformApi()).locations;
+       projectFile = projectFileApi.parse(locations);
+     }
+   }
+   return projectFile;
+ }
 
 /**
  * Remove comments from the file.
